@@ -3,128 +3,166 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Definitely Not A Robot</title>
+  <title>Are You SURE You’re Not a Robot?</title>
   <style>
-    body { font-family: system-ui, Arial, sans-serif; margin:0; min-height:100vh; display:grid; place-items:center; background:#0f1220; color:#eef; }
-    .card { width:min(820px, 94vw); background:#151a2e; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:22px; box-shadow:0 16px 48px rgba(0,0,0,.45); }
+    :root { --bg:#0f1220; --card:#151a2e; --line:rgba(255,255,255,.10); --soft:rgba(255,255,255,.06); --txt:#eef; }
+    body { font-family: system-ui, Arial, sans-serif; margin:0; min-height:100vh; display:grid; place-items:center; background:var(--bg); color:var(--txt); }
+    .card { width:min(860px, 94vw); background:var(--card); border:1px solid var(--line); border-radius:18px; padding:22px; box-shadow:0 16px 48px rgba(0,0,0,.45); }
     h1 { margin:0 0 6px; font-size:22px; }
     p { margin:0 0 14px; color:rgba(238,238,255,.85); line-height:1.35; }
-    .row { display:flex; gap:14px; flex-wrap:wrap; }
-    .panel { flex:1 1 360px; border:1px solid rgba(255,255,255,.09); border-radius:14px; padding:14px; background:rgba(255,255,255,.03); }
-    .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:10px; }
-    button.tile {
-      aspect-ratio:1/1; border-radius:12px; border:1px solid rgba(255,255,255,.12);
-      background:rgba(255,255,255,.06); color:#fff; font-size:30px; cursor:pointer;
-      transition:transform .05s ease, background .15s ease;
-      user-select:none;
-    }
-    button.tile:hover { background:rgba(255,255,255,.09); }
-    button.tile:active { transform:scale(.98); }
-    .btn {
-      border-radius:12px; border:1px solid rgba(255,255,255,.14);
-      background:rgba(255,255,255,.07); color:#fff; cursor:pointer; padding:10px 12px;
-      font-size:14px; transition:background .15s ease;
-    }
-    .btn:hover { background:rgba(255,255,255,.10); }
+    .step { display:none; border:1px solid var(--line); border-radius:14px; padding:14px; background:rgba(255,255,255,.03); }
+    .step.active { display:block; }
+    .title { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .badge { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05); }
     .status { margin-top:10px; font-size:14px; min-height:22px; }
     .status.good { color:#6ef7a7; }
     .status.bad { color:#ff7a7a; }
-    .chipbar { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-    .chip { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.05); }
-    .chip.done { background:rgba(110,247,167,.15); border-color:rgba(110,247,167,.35); }
     .tiny { font-size:12px; color:rgba(238,238,255,.7); margin-top:8px; }
+
+    /* Buttons */
+    .btn {
+      border-radius:12px; border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.07); color:#fff; cursor:pointer; padding:10px 12px;
+      font-size:14px; transition:background .15s ease; user-select:none;
+    }
+    .btn:hover { background:rgba(255,255,255,.10); }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+
+    /* Emoji grid */
+    .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:10px; max-width:360px; }
+    button.tile {
+      aspect-ratio:1/1; border-radius:12px; border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.06); color:#fff; font-size:30px; cursor:pointer;
+      transition:transform .05s ease, background .15s ease; user-select:none;
+    }
+    button.tile:hover { background:rgba(255,255,255,.09); }
+    button.tile:active { transform:scale(.98); }
+
+    /* Slider */
     .meter { height:10px; border-radius:999px; background:rgba(255,255,255,.08); overflow:hidden; margin-top:10px; }
     .fill { height:100%; width:0%; background:rgba(110,247,167,.75); transition:width .25s ease; }
-    .callout { font-weight:600; }
-    a { color:#9bd2ff; }
+
+    /* Chess */
+    .chessWrap { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start; }
+    .board {
+      display:grid; grid-template-columns:repeat(8, 48px); grid-template-rows:repeat(8, 48px);
+      border-radius:14px; overflow:hidden; border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.04);
+    }
+    .sq {
+      display:grid; place-items:center; font-size:28px; cursor:pointer; user-select:none;
+    }
+    .light { background:rgba(255,255,255,.06); }
+    .dark  { background:rgba(255,255,255,.02); }
+    .sq.sel { outline:2px solid rgba(155,210,255,.9); outline-offset:-2px; }
+    .sq.hint { outline:2px dashed rgba(255,255,255,.25); outline-offset:-2px; }
+    .panel { flex:1 1 320px; border:1px solid var(--line); border-radius:14px; padding:12px; background:rgba(255,255,255,.03); }
+    code { background:rgba(255,255,255,.06); padding:2px 6px; border-radius:8px; }
   </style>
 </head>
+
 <body>
   <div class="card">
     <h1>Human Verification (but like… are you <em>sure</em>?)</h1>
     <p>
-      We noticed “extremely human energy” coming from your browser. Suspicious.
-      Complete the steps below. If you fail, we will act disappointed.
+      You will complete 4 tasks. One at a time. No skipping. We don’t make the rules.
+      (We do. We literally do.)
     </p>
 
-    <div class="row">
-      <div class="panel">
-        <div><strong>Step 1:</strong> Click the <span class="callout">Goose</span> 🪿 (don’t click the <span class="callout">Bread</span> 🍞)</div>
-        <div class="grid" id="grid"></div>
-        <div class="status" id="s1"></div>
-
-        <div class="chipbar">
-          <span class="chip" id="c1">1) Goose</span>
-          <span class="chip" id="c2">2) “Are you sure?”</span>
-          <span class="chip" id="c3">3) Petty slider</span>
-        </div>
-
-        <div class="tiny" id="taunt">Tip: Robots LOVE bread.</div>
+    <!-- STEP 1 -->
+    <div class="step active" id="step1">
+      <div class="title">
+        <div><strong>Step 1:</strong> Click the <span style="font-weight:700;">Goose</span> 🪿</div>
+        <span class="badge">Progressive Rage™</span>
       </div>
+      <div class="grid" id="emojiGrid"></div>
+      <div class="status" id="s1"></div>
+      <div class="tiny" id="t1">Tip: robots always click the bread first. 🍞</div>
+    </div>
 
-      <div class="panel">
-        <div><strong>Step 2:</strong> The “Are you sureeee?” interrogation</div>
-        <p class="tiny">Click “Yes” like you mean it. (We will still doubt you.)</p>
+    <!-- STEP 2 -->
+    <div class="step" id="step2">
+      <div class="title">
+        <div><strong>Step 2:</strong> Are you sureeee you’re not a robot?</div>
+        <span class="badge" id="yesCounter">0/3 confirmations</span>
+      </div>
+      <p class="tiny">Click “Yes” <em>three times</em>. If you hesitate, we will assume you’re a toaster with opinions.</p>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn" id="yesBtn">Yes. I am not a robot.</button>
+        <button class="btn" id="noBtn">No (??)</button>
+        <button class="btn" id="pettyBtn" title="Definitely not malicious">Re-check my vibes</button>
+      </div>
+      <div class="status" id="s2"></div>
+    </div>
 
-        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-          <button class="btn" id="yesBtn">Yes. I am not a robot.</button>
-          <button class="btn" id="noBtn">No (??)</button>
-          <button class="btn" id="refreshBtn" title="Just to be annoying">Re-check my vibes</button>
+    <!-- STEP 3 -->
+    <div class="step" id="step3">
+      <div class="title">
+        <div><strong>Step 3:</strong> Set “Human Confidence” to exactly <strong>73%</strong></div>
+        <span class="badge" id="pctBadge">0%</span>
+      </div>
+      <p class="tiny">Not 72. Not 74. 73. Because we said so.</p>
+      <input id="slider" type="range" min="0" max="100" value="0" style="width:100%;">
+      <div class="meter"><div class="fill" id="fill"></div></div>
+      <div class="status" id="s3"></div>
+    </div>
+
+    <!-- STEP 4 -->
+    <div class="step" id="step4">
+      <div class="title">
+        <div><strong>Step 4:</strong> Chess captcha (mate in 1)</div>
+        <span class="badge">Final Boss</span>
+      </div>
+      <p class="tiny">
+        White to move. Deliver checkmate in one move.
+        If you fail, we will say “interesting choice” in a tone that ruins your whole day.
+      </p>
+
+      <div class="chessWrap">
+        <div>
+          <div class="board" id="board"></div>
+          <div class="tiny" style="margin-top:8px;">
+            Click a piece, then click its destination square.
+            (Yes, we are judging.)
+          </div>
         </div>
 
-        <div class="status" id="s2"></div>
-
-        <hr style="border:none; border-top:1px solid rgba(255,255,255,.10); margin:14px 0;">
-
-        <div><strong>Step 3:</strong> Set your “Human Confidence” to exactly <span class="callout">73%</span></div>
-        <p class="tiny">Not 72. Not 74. We have standards.</p>
-
-        <input id="slider" type="range" min="0" max="100" value="0" style="width:100%; margin-top:8px;">
-        <div class="meter"><div class="fill" id="fill"></div></div>
-        <div class="tiny">Current: <span id="pct">0</span>%</div>
-
-        <div class="status" id="s3"></div>
-
-        <div class="tiny" style="margin-top:12px;">
-          When all steps are done, you’ll be redirected.
-          <span class="callout" id="redir"></span>
+        <div class="panel">
+          <div><strong>Position:</strong> White King on h6, White Queen on f7. Black King on h8.</div>
+          <div class="tiny">Hint: it’s the move that makes the black king’s life choices flash before its eyes.</div>
+          <div class="status" id="s4"></div>
+          <div class="tiny" id="redir"></div>
         </div>
       </div>
     </div>
+
   </div>
 
 <script>
   // ✅ Put your YouTube link here:
   const TARGET_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
 
-  // Rage-bait settings (mildly evil)
-  const REQUIRED_YES_CLICKS = 3;    // you must click "Yes" 3 times
-  const REQUIRED_SLIDER = 73;       // exactly 73%
-  const REDIRECT_DELAY_MS = 1500;
+  // ---------------------------
+  // Progressive step controller
+  // ---------------------------
+  const steps = ["step1","step2","step3","step4"].map(id => document.getElementById(id));
+  function showStep(n) {
+    steps.forEach((el, i) => el.classList.toggle("active", i === n));
+  }
 
-  const gridEl = document.getElementById("grid");
-  const s1 = document.getElementById("s1");
-  const s2 = document.getElementById("s2");
-  const s3 = document.getElementById("s3");
-  const redir = document.getElementById("redir");
-  const taunt = document.getElementById("taunt");
+  function setStatus(el, msg, good) {
+    el.className = "status " + (good ? "good" : "bad");
+    el.textContent = msg;
+  }
 
-  const c1 = document.getElementById("c1");
-  const c2 = document.getElementById("c2");
-  const c3 = document.getElementById("c3");
-
-  const yesBtn = document.getElementById("yesBtn");
-  const noBtn = document.getElementById("noBtn");
-  const refreshBtn = document.getElementById("refreshBtn");
-
-  const slider = document.getElementById("slider");
-  const pct = document.getElementById("pct");
-  const fill = document.getElementById("fill");
-
+  // ---------------------------
+  // STEP 1: Goose click
+  // ---------------------------
   const EMOJIS = ["🪿","🍞","🧃","🧠","🧽","🦆","🧯","🧊","🧦"];
-
-  let done1 = false, done2 = false, done3 = false;
-  let yesClicks = 0;
+  const emojiGrid = document.getElementById("emojiGrid");
+  const s1 = document.getElementById("s1");
+  const t1 = document.getElementById("t1");
+  let step1Done = false;
 
   function shuffle(a) {
     a = a.slice();
@@ -135,108 +173,212 @@
     return a;
   }
 
-  function setStatus(el, msg, good) {
-    el.className = "status " + (good ? "good" : "bad");
-    el.textContent = msg;
-  }
-
-  function renderGrid() {
-    gridEl.innerHTML = "";
+  function renderEmojiGrid() {
+    emojiGrid.innerHTML = "";
     const order = shuffle(EMOJIS);
+    order.forEach(emoji => {
+      const b = document.createElement("button");
+      b.className = "tile";
+      b.type = "button";
+      b.textContent = emoji;
+      b.addEventListener("click", () => {
+        if (step1Done) return;
 
-    order.forEach((emoji) => {
-      const btn = document.createElement("button");
-      btn.className = "tile";
-      btn.type = "button";
-      btn.textContent = emoji;
-      btn.addEventListener("click", () => clickEmoji(emoji));
-      gridEl.appendChild(btn);
+        if (emoji === "🪿") {
+          step1Done = true;
+          setStatus(s1, "✅ Fine. You found the goose. Congratulations on your… eyes.", true);
+          t1.textContent = "Okay wow. “Goose Finder.” Moving on.";
+          setTimeout(() => showStep(1), 650);
+        } else if (emoji === "🍞") {
+          setStatus(s1, "❌ You clicked bread. Predictable. Re-shuffling because you clearly need it.", false);
+          renderEmojiGrid();
+        } else {
+          setStatus(s1, "❌ Not the goose. Try again. Slowly this time.", false);
+        }
+      });
+      emojiGrid.appendChild(b);
     });
-
-    if (!done1) {
-      s1.className = "status";
-      s1.textContent = "Click the Goose. Don’t embarrass yourself.";
-    }
+    s1.className = "status";
+    s1.textContent = "Click the Goose. Don’t click the Bread. (This is not hard.)";
   }
 
-  function clickEmoji(emoji) {
-    if (done1) return;
+  renderEmojiGrid();
 
-    if (emoji === "🪿") {
-      done1 = true;
-      c1.classList.add("done");
-      setStatus(s1, "✅ Fine. That was correct. But like… you could still be a robot with luck.", true);
-      taunt.textContent = "Ok wow. Mr./Ms. “Found The Goose.”";
-      maybeFinish();
-    } else if (emoji === "🍞") {
-      setStatus(s1, "❌ You clicked Bread. Predictable. Re-shuffling because you clearly need it.", false);
-      taunt.textContent = "Bread enjoyer detected. Suspicious.";
-      renderGrid();
-    } else {
-      setStatus(s1, "❌ Not the Goose. Try again. Slowly this time.", false);
-    }
+  // ---------------------------
+  // STEP 2: “Are you sureeee?”
+  // ---------------------------
+  const yesBtn = document.getElementById("yesBtn");
+  const noBtn = document.getElementById("noBtn");
+  const pettyBtn = document.getElementById("pettyBtn");
+  const s2 = document.getElementById("s2");
+  const yesCounter = document.getElementById("yesCounter");
+
+  const REQUIRED_YES = 3;
+  let yesClicks = 0;
+
+  function updateYesCounter() {
+    yesCounter.textContent = `${yesClicks}/${REQUIRED_YES} confirmations`;
   }
+  updateYesCounter();
 
-  // Step 2: interrogation
   yesBtn.addEventListener("click", () => {
     yesClicks++;
+    updateYesCounter();
 
-    // Petty: sometimes doubt them even more mid-way
-    if (yesClicks < REQUIRED_YES_CLICKS) {
-      setStatus(s2, `Hmm. You said yes, but like… say it again (${yesClicks}/${REQUIRED_YES_CLICKS}).`, false);
-      // tiny annoyance: reshuffle grid once on the first yes click
-      if (yesClicks === 1 && !done1) renderGrid();
+    if (yesClicks < REQUIRED_YES) {
+      setStatus(s2, `Mmm. Say it again. With confidence. (${yesClicks}/${REQUIRED_YES})`, false);
       return;
     }
-
-    done2 = true;
-    c2.classList.add("done");
-    setStatus(s2, "✅ Okay. You were confident THREE times. That’s… aggressively human.", true);
-    maybeFinish();
+    setStatus(s2, "✅ Okay. You insisted THREE times. That’s… aggressively human.", true);
+    setTimeout(() => showStep(2), 650);
   });
 
   noBtn.addEventListener("click", () => {
-    setStatus(s2, "Interesting choice. A robot would say that as a joke. So would a human. We hate this.", false);
+    setStatus(s2, "Interesting. A robot would say that as a joke. So would a human. We hate this.", false);
   });
 
-  refreshBtn.addEventListener("click", () => {
-    // petty: reset Step 2 progress
+  pettyBtn.addEventListener("click", () => {
     yesClicks = 0;
-    done2 = false;
-    c2.classList.remove("done");
+    updateYesCounter();
     setStatus(s2, "We re-checked your vibes and they were… inconsistent. Start over. (0/3)", false);
-
-    // also reshuffle grid for chaos
-    if (!done1) renderGrid();
   });
 
-  // Step 3: exact slider value
+  // ---------------------------
+  // STEP 3: Slider exact 73
+  // ---------------------------
+  const slider = document.getElementById("slider");
+  const fill = document.getElementById("fill");
+  const pctBadge = document.getElementById("pctBadge");
+  const s3 = document.getElementById("s3");
+
+  const REQUIRED_SLIDER = 73;
+
+  function updateSliderUI(v) {
+    pctBadge.textContent = `${v}%`;
+    fill.style.width = v + "%";
+  }
+  updateSliderUI(0);
+  s3.className = "status";
+  s3.textContent = "Set it to 73%. Don’t act like you can’t.";
+
   slider.addEventListener("input", () => {
     const v = Number(slider.value);
-    pct.textContent = v;
-    fill.style.width = v + "%";
+    updateSliderUI(v);
 
     if (v === REQUIRED_SLIDER) {
-      done3 = true;
-      c3.classList.add("done");
       setStatus(s3, "✅ 73%. Weirdly specific. Exactly what we wanted. Congrats, I guess.", true);
+      setTimeout(() => showStep(3), 650);
+    } else if (v < REQUIRED_SLIDER) {
+      setStatus(s3, "Too low. You’re giving ‘firmware update’ energy.", false);
     } else {
-      done3 = false;
-      c3.classList.remove("done");
-      if (v < REQUIRED_SLIDER) setStatus(s3, "Too low. You’re giving ‘firmware update’ energy.", false);
-      else setStatus(s3, "Too high. Overconfident. That’s what bots *want* us to think.", false);
+      setStatus(s3, "Too high. Overconfident. That’s what bots *want* us to think.", false);
     }
-    maybeFinish();
   });
 
-  function maybeFinish() {
-    if (done1 && done2 && done3) {
-      redir.textContent = "Redirecting… (don’t mess it up)";
-      setTimeout(() => window.location.href = TARGET_URL, REDIRECT_DELAY_MS);
+  // ---------------------------
+  // STEP 4: Chess puzzle (mate in 1)
+  // Hardcoded: Move Qf7 -> Qg7#
+  // ---------------------------
+  const boardEl = document.getElementById("board");
+  const s4 = document.getElementById("s4");
+  const redir = document.getElementById("redir");
+
+  // Minimal position:
+  // 8  . . . . . . . k
+  // 7  . . . . . Q . .
+  // 6  . . . . . . . K
+  // (i.e., White: K h6, Q f7; Black: K h8)
+  let position = {
+    "h8": "k",
+    "f7": "Q",
+    "h6": "K",
+  };
+
+  const pieceToUnicode = {
+    "K": "♔", "Q": "♕", "R": "♖", "B": "♗", "N": "♘", "P": "♙",
+    "k": "♚", "q": "♛", "r": "♜", "b": "♝", "n": "♞", "p": "♟"
+  };
+
+  const files = ["a","b","c","d","e","f","g","h"];
+  const ranks = ["8","7","6","5","4","3","2","1"];
+
+  let selected = null; // square like "f7"
+
+  function squareColor(fileIndex, rankIndex) {
+    // a8 is dark in standard boards
+    const isDark = (fileIndex + rankIndex) % 2 === 0;
+    return isDark ? "dark" : "light";
+  }
+
+  function renderBoard() {
+    boardEl.innerHTML = "";
+    for (let r = 0; r < 8; r++) {
+      for (let f = 0; f < 8; f++) {
+        const sq = files[f] + ranks[r];
+        const div = document.createElement("div");
+        div.className = "sq " + squareColor(f, r);
+        if (sq === selected) div.classList.add("sel");
+
+        const piece = position[sq];
+        div.textContent = piece ? pieceToUnicode[piece] : "";
+
+        div.addEventListener("click", () => onSquareClick(sq));
+        boardEl.appendChild(div);
+      }
     }
   }
 
-  renderGrid();
+  function onSquareClick(sq) {
+    // Select only the white queen (rage-bait: we pretend your other choices are invalid)
+    if (!selected) {
+      if (position[sq] === "Q") {
+        selected = sq;
+        setStatus(s4, "Okay. You picked the queen. Don’t waste this moment.", true);
+      } else {
+        setStatus(s4, "No. Pick the queen. This isn’t ‘freestyle chess.’", false);
+      }
+      renderBoard();
+      return;
+    }
+
+    // If clicked same square, unselect
+    if (selected === sq) {
+      selected = null;
+      s4.className = "status";
+      s4.textContent = "Fine. Resetting. Click the queen again, drama king/queen.";
+      renderBoard();
+      return;
+    }
+
+    // Attempt move selected -> sq
+    const from = selected;
+    const to = sq;
+
+    // Only accept the correct answer: Qf7 -> g7
+    const correctFrom = "f7";
+    const correctTo = "g7";
+
+    if (from === correctFrom && to === correctTo) {
+      // Make the move
+      delete position[from];
+      position[to] = "Q";
+      selected = null;
+      renderBoard();
+
+      setStatus(s4, "✅ Checkmate. Okay… you’re probably not a robot. (Probably.)", true);
+      redir.textContent = "Redirecting to your link in 1.5s… don’t blink.";
+      setTimeout(() => window.location.href = TARGET_URL, 1500);
+    } else {
+      // Rage-bait: reject and make them reselect
+      selected = null;
+      renderBoard();
+      setStatus(s4, `❌ “${from} → ${to}” is… a choice. Not the right one. Try again.`, false);
+    }
+  }
+
+  s4.className = "status";
+  s4.textContent = "White to move. Find mate in 1. (Yes, it’s easy. No, we won’t say which move.)";
+  renderBoard();
 </script>
 </body>
 </html>
