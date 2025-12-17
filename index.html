@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Totally Serious Human Verification</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin:0; min-height:100vh; display:grid; place-items:center; background:#f7f7fb; }
+    .card { width:min(720px, 92vw); background:white; border:1px solid #e5e5ef; border-radius:18px; padding:22px; box-shadow:0 10px 30px rgba(0,0,0,.06); }
+    h1 { margin:0 0 6px; font-size:22px; }
+    p { margin:0 0 14px; color:#444; }
+    .row { display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start; }
+    .panel { flex:1 1 320px; border:1px solid #eee; border-radius:14px; padding:14px; }
+    .grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:10px; margin-top:10px; }
+    button.tile {
+      aspect-ratio: 1 / 1;
+      border-radius:12px;
+      border:1px solid #e6e6f2;
+      background:#fafafe;
+      font-size:30px;
+      cursor:pointer;
+      transition:transform .05s ease;
+      user-select:none;
+    }
+    button.tile:active { transform:scale(.98); }
+    .status { margin-top:10px; font-size:14px; color:#333; min-height:20px; }
+    .status.good { color:#0a7a2f; }
+    .status.bad { color:#b00020; }
+    .progress { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+    .chip { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid #e6e6f2; background:#fafafe; }
+    .chip.done { background:#eafff1; border-color:#b9f5cc; }
+    .footer { margin-top:12px; font-size:12px; color:#666; }
+    .redirect { font-weight:600; }
+    .tiny { font-size:12px; color:#777; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Totally Serious Human Verification™</h1>
+    <p>To continue, complete this advanced security check. (It’s very dumb on purpose.)</p>
+
+    <div class="row">
+      <div class="panel">
+        <div><strong>Task 1:</strong> Click the <em>Goose</em> 🪿</div>
+        <div class="grid" id="grid"></div>
+        <div class="status" id="status"></div>
+        <div class="progress">
+          <span class="chip" id="c1">1) Find Goose</span>
+          <span class="chip" id="c2">2) Prove Vibes</span>
+          <span class="chip" id="c3">3) Anti-Robot Oath</span>
+        </div>
+        <div class="tiny">Tip: robots always click the toaster first.</div>
+      </div>
+
+      <div class="panel">
+        <div><strong>Task 2:</strong> Prove you have “vibes”</div>
+        <p class="tiny" style="margin-top:8px;">Pick the vibe that best describes you right now:</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+          <button class="tile" style="aspect-ratio:auto; padding:10px 14px; font-size:16px;" data-vibe="cozy">😌 Cozy</button>
+          <button class="tile" style="aspect-ratio:auto; padding:10px 14px; font-size:16px;" data-vibe="chaos">🌀 Chaos</button>
+          <button class="tile" style="aspect-ratio:auto; padding:10px 14px; font-size:16px;" data-vibe="tired">😵‍💫 Tired</button>
+        </div>
+
+        <div style="margin-top:14px;"><strong>Task 3:</strong> Anti-robot oath</div>
+        <label style="display:flex; gap:10px; align-items:flex-start; margin-top:10px;">
+          <input type="checkbox" id="oath" style="transform:translateY(2px);" />
+          <span class="tiny">I solemnly swear I am not a robot, and if I am, I will not unionize without notifying management.</span>
+        </label>
+
+        <div class="status" id="status2"></div>
+
+        <div class="footer">
+          When all tasks are done, you’ll be redirected. <span class="redirect" id="redirMsg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ✅ Put your YouTube link here:
+  const TARGET_URL = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+
+  const EMOJIS = ["🪿","🍞","🧃","🧠","🧽","🦆","🧯","🧊","🧦"]; // includes the Goose
+  const gridEl = document.getElementById("grid");
+  const statusEl = document.getElementById("status");
+  const status2El = document.getElementById("status2");
+  const redirMsgEl = document.getElementById("redirMsg");
+
+  const chip1 = document.getElementById("c1");
+  const chip2 = document.getElementById("c2");
+  const chip3 = document.getElementById("c3");
+
+  let gooseIndex = -1;
+  let done1 = false, done2 = false, done3 = false;
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function renderGrid() {
+    gridEl.innerHTML = "";
+    const order = shuffle(EMOJIS);
+    gooseIndex = order.indexOf("🪿");
+
+    order.forEach((emoji, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "tile";
+      btn.type = "button";
+      btn.textContent = emoji;
+      btn.addEventListener("click", () => handleTileClick(emoji, idx));
+      gridEl.appendChild(btn);
+    });
+
+    statusEl.className = "status";
+    statusEl.textContent = "Click the Goose. Do not click the toaster. (🍞)";
+  }
+
+  function handleTileClick(emoji) {
+    if (done1) return;
+
+    if (emoji === "🪿") {
+      done1 = true;
+      chip1.classList.add("done");
+      statusEl.className = "status good";
+      statusEl.textContent = "✅ Correct. You found the Goose. Honk acknowledged.";
+      maybeFinish();
+    } else if (emoji === "🍞") {
+      statusEl.className = "status bad";
+      statusEl.textContent = "❌ You clicked the toaster. That’s exactly what a robot would do. Grid re-shuffled.";
+      renderGrid();
+    } else {
+      statusEl.className = "status bad";
+      statusEl.textContent = "❌ Not the Goose. Try again. (Robots are watching. Probably.)";
+    }
+  }
+
+  // Task 2: vibe buttons
+  document.querySelectorAll("[data-vibe]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      done2 = true;
+      chip2.classList.add("done");
+      status2El.className = "status good";
+      status2El.textContent = `✅ Vibe confirmed: "${btn.dataset.vibe}". Very human of you.`;
+      maybeFinish();
+    });
+  });
+
+  // Task 3: oath checkbox
+  document.getElementById("oath").addEventListener("change", (e) => {
+    done3 = e.target.checked;
+    chip3.classList.toggle("done", done3);
+    if (!done3) {
+      status2El.className = "status bad";
+      status2El.textContent = "❌ Oath revoked. Suspicious. (Just kidding. Mostly.)";
+    } else {
+      status2El.className = "status good";
+      status2El.textContent = "✅ Oath accepted. Welcome, fellow carbon-based lifeform.";
+    }
+    maybeFinish();
+  });
+
+  function maybeFinish() {
+    if (done1 && done2 && done3) {
+      redirMsgEl.textContent = "Redirecting in 2 seconds…";
+      setTimeout(() => window.location.href = TARGET_URL, 2000);
+    }
+  }
+
+  renderGrid();
+</script>
+</body>
+</html>
